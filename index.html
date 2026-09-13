@@ -1,0 +1,1519 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Focus — a quiet place to study</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,400;6..72,500;6..72,600&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+/* ============ TOKENS ============ */
+:root{
+  --ink:#1B1E20;
+  --chalk:#EFEFEA;
+  --surface-light:#FBFBF8;
+  --surface-dark:#24282A;
+  --border-light: rgba(27,30,32,0.10);
+  --border-dark: rgba(239,239,234,0.10);
+  --text-light:#2A2E30;
+  --text-light-muted:#6B7075;
+  --text-dark:#E8E6DD;
+  --text-dark-muted:#9BA1A0;
+  --pine:#5C8A73;
+  --pine-soft: rgba(92,138,115,0.14);
+  --dusk:#7A93B8;
+  --dusk-soft: rgba(122,147,184,0.16);
+  --danger:#B3654A;
+  --radius-sm:10px;
+  --radius-md:14px;
+  --radius-lg:20px;
+  --serif:'Newsreader', Georgia, serif;
+  --sans:'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --shadow: 0 1px 2px rgba(0,0,0,0.04);
+  --transition: 180ms ease;
+}
+[data-theme="light"]{
+  --bg:var(--chalk);
+  --surface:var(--surface-light);
+  --surface-2: #F3F2EC;
+  --border:var(--border-light);
+  --text:var(--text-light);
+  --text-muted:var(--text-light-muted);
+}
+[data-theme="dark"]{
+  --bg:var(--ink);
+  --surface:var(--surface-dark);
+  --surface-2: #2B2F31;
+  --border:var(--border-dark);
+  --text:var(--text-dark);
+  --text-muted:var(--text-dark-muted);
+}
+*{box-sizing:border-box;}
+html,body{height:100%;}
+body{
+  margin:0;
+  background:var(--bg);
+  color:var(--text);
+  font-family:var(--sans);
+  -webkit-font-smoothing:antialiased;
+  transition: background var(--transition), color var(--transition);
+}
+button{font-family:inherit;}
+:focus-visible{outline:2px solid var(--pine); outline-offset:2px;}
+a{color:inherit;}
+
+.app{
+  display:grid;
+  grid-template-columns: 76px 1fr;
+  min-height:100vh;
+}
+
+/* ============ NAV RAIL ============ */
+.nav-rail{
+  border-right:1px solid var(--border);
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  padding:20px 0;
+  gap:6px;
+}
+.nav-mark{
+  width:34px;height:34px;border-radius:10px;
+  background:var(--pine);
+  margin-bottom:22px;
+  display:flex;align-items:center;justify-content:center;
+  color:#fff; font-family:var(--serif); font-size:18px;
+}
+.nav-btn{
+  width:52px;height:52px;
+  border:none;background:none;
+  border-radius:var(--radius-sm);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:4px;
+  color:var(--text-muted);
+  cursor:pointer;
+  transition: background var(--transition), color var(--transition);
+  font-size:10.5px;
+}
+.nav-btn svg{width:19px;height:19px;stroke:currentColor;fill:none;stroke-width:1.6;}
+.nav-btn:hover{background:var(--surface-2); color:var(--text);}
+.nav-btn.active{background:var(--pine-soft); color:var(--pine);}
+.nav-spacer{flex:1;}
+.nav-foot{display:flex;flex-direction:column;gap:6px;padding-bottom:4px;}
+
+/* ============ MAIN ============ */
+.main{ display:flex; flex-direction:column; min-height:100vh; }
+.topbar{
+  display:flex; align-items:center; justify-content:space-between;
+  padding:22px 32px 0 32px;
+}
+.topbar h1{
+  font-family:var(--serif); font-weight:500; font-size:22px; margin:0;
+}
+.topbar-actions{display:flex; gap:8px;}
+.icon-btn{
+  width:38px;height:38px;border-radius:10px;border:1px solid var(--border);
+  background:var(--surface); color:var(--text-muted);
+  display:flex;align-items:center;justify-content:center;cursor:pointer;
+  transition: color var(--transition), border-color var(--transition);
+}
+.icon-btn:hover{color:var(--text); border-color: var(--text-muted);}
+.icon-btn svg{width:17px;height:17px;stroke:currentColor;fill:none;stroke-width:1.6;}
+
+.view{ padding:20px 32px 60px 32px; flex:1; }
+.hidden{ display:none !important; }
+
+/* ============ FOCUS PAGE ============ */
+.focus-grid{
+  display:grid;
+  grid-template-columns: 1fr 300px;
+  gap:28px;
+  margin-top:6px;
+}
+.focus-main{
+  display:flex; flex-direction:column; align-items:center;
+  padding:40px 20px 30px 20px;
+}
+.clock{
+  font-family:var(--serif); font-weight:400; font-size:15px; letter-spacing:0.02em;
+  color:var(--text-muted); margin-bottom:2px;
+}
+.date-line{ font-size:13px; color:var(--text-muted); margin-bottom:30px; }
+
+.timer-ring-wrap{ position:relative; width:280px; height:280px; margin-bottom:22px; }
+.timer-ring-wrap svg{ width:100%; height:100%; transform:rotate(-90deg); }
+.ring-track{ fill:none; stroke:var(--border); stroke-width:4; }
+.ring-progress{ fill:none; stroke:var(--pine); stroke-width:4; stroke-linecap:round; transition: stroke 400ms ease; }
+.ring-progress.break{ stroke:var(--dusk); }
+.timer-center{
+  position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center;
+}
+.timer-mode-label{
+  font-size:11.5px; letter-spacing:0.04em; color:var(--pine); margin-bottom:8px;
+  padding:4px 12px; border-radius:20px; background:var(--pine-soft);
+}
+.timer-mode-label.break{ color:var(--dusk); background:var(--dusk-soft); }
+.timer-big{ font-family:var(--serif); font-size:56px; font-weight:500; line-height:1; }
+.timer-sub{ font-size:12.5px; color:var(--text-muted); margin-top:8px; }
+
+.timer-controls{ display:flex; gap:10px; margin-top:4px; }
+.btn{
+  border:none; cursor:pointer; font-family:var(--sans); font-weight:500; font-size:14px;
+  border-radius:12px; padding:11px 22px; transition: transform var(--transition), background var(--transition), opacity var(--transition);
+}
+.btn:active{ transform: scale(0.97); }
+.btn-primary{ background:var(--pine); color:#fff; }
+.btn-primary:hover{ opacity:0.9; }
+.btn-ghost{ background:var(--surface-2); color:var(--text); }
+.btn-ghost:hover{ background:var(--border); }
+.btn-text{ background:none; color:var(--text-muted); padding:11px 14px; }
+.btn-text:hover{ color:var(--text); }
+.btn-sm{ padding:8px 14px; font-size:13px; border-radius:10px; }
+.btn:disabled{ opacity:0.4; cursor:not-allowed; }
+
+.quick-row{ display:flex; gap:10px; margin-top:26px; flex-wrap:wrap; justify-content:center; }
+.quick-chip{
+  display:flex; align-items:center; gap:7px;
+  border:1px solid var(--border); background:var(--surface);
+  padding:9px 15px; border-radius:12px; cursor:pointer; font-size:13px; color:var(--text);
+  transition: border-color var(--transition);
+}
+.quick-chip:hover{ border-color:var(--text-muted); }
+.quick-chip svg{ width:14px;height:14px; stroke:currentColor; fill:none; stroke-width:1.6; }
+
+/* side column on focus page */
+.focus-side{ display:flex; flex-direction:column; gap:16px; }
+.card{
+  background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-md);
+  padding:18px 18px;
+}
+.card h3{ font-size:12.5px; font-weight:600; text-transform:none; color:var(--text-muted); margin:0 0 12px 0; letter-spacing:0.01em;}
+.stat-row{ display:flex; justify-content:space-between; align-items:baseline; margin-bottom:10px; }
+.stat-row:last-child{ margin-bottom:0; }
+.stat-label{ font-size:13px; color:var(--text-muted); }
+.stat-value{ font-family:var(--serif); font-size:20px; font-weight:500; }
+
+.progress-bar{ height:6px; border-radius:6px; background:var(--surface-2); overflow:hidden; margin-top:4px; }
+.progress-bar > div{ height:100%; background:var(--pine); border-radius:6px; transition: width 300ms ease; }
+
+.mini-task{ display:flex; align-items:center; gap:9px; padding:7px 0; font-size:13.5px; }
+.mini-task input{ accent-color:var(--pine); width:15px; height:15px; }
+.mini-task.done span{ text-decoration:line-through; color:var(--text-muted); }
+.mini-empty{ font-size:13px; color:var(--text-muted); padding:6px 0; }
+
+/* ============ SETTINGS PANEL POPOVER ============ */
+.panel-overlay{
+  position:fixed; inset:0; background:rgba(0,0,0,0.28); display:flex; align-items:center; justify-content:center;
+  z-index:50; padding:20px;
+}
+.panel{
+  background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-lg);
+  width:100%; max-width:400px; padding:24px; max-height:85vh; overflow-y:auto;
+}
+.panel h2{ font-family:var(--serif); font-weight:500; font-size:19px; margin:0 0 18px 0; }
+.setting-row{ display:flex; align-items:center; justify-content:space-between; padding:11px 0; border-bottom:1px solid var(--border); gap:14px;}
+.setting-row:last-of-type{ border-bottom:none; }
+.setting-row label{ font-size:13.5px; }
+.setting-row .hint{ font-size:11.5px; color:var(--text-muted); display:block; margin-top:2px; }
+.setting-row input[type="number"]{
+  width:64px; padding:7px 9px; border-radius:8px; border:1px solid var(--border); background:var(--bg); color:var(--text); font-size:13.5px;
+}
+select{
+  padding:7px 9px; border-radius:8px; border:1px solid var(--border); background:var(--bg); color:var(--text); font-size:13px;
+}
+.switch{ position:relative; width:40px; height:23px; }
+.switch input{ opacity:0; width:0; height:0; }
+.slider-toggle{
+  position:absolute; inset:0; background:var(--surface-2); border-radius:20px; cursor:pointer; transition: background var(--transition);
+}
+.slider-toggle::before{
+  content:""; position:absolute; width:17px; height:17px; left:3px; top:3px; background:#fff; border-radius:50%; transition: transform var(--transition); box-shadow:0 1px 2px rgba(0,0,0,0.2);
+}
+.switch input:checked + .slider-toggle{ background:var(--pine); }
+.switch input:checked + .slider-toggle::before{ transform: translateX(17px); }
+.panel-close-row{ display:flex; justify-content:space-between; margin-top:18px; }
+
+/* ============ TIMER PAGE (countdown / stopwatch / alarms) ============ */
+.tabs{ display:flex; gap:4px; background:var(--surface-2); padding:4px; border-radius:12px; width:fit-content; margin-bottom:24px; }
+.tab-btn{
+  border:none; background:none; padding:8px 18px; border-radius:9px; font-size:13.5px; color:var(--text-muted); cursor:pointer; font-family:inherit;
+}
+.tab-btn.active{ background:var(--surface); color:var(--text); box-shadow:var(--shadow); }
+.centered-col{ display:flex; flex-direction:column; align-items:center; }
+
+.duration-input-row{ display:flex; gap:10px; margin-bottom:24px; flex-wrap:wrap; justify-content:center; }
+.duration-input-row .btn-ghost{ font-size:13px; }
+.custom-duration{ display:flex; align-items:center; gap:8px; }
+.custom-duration input{ width:64px; padding:9px; text-align:center; border-radius:10px; border:1px solid var(--border); background:var(--surface); color:var(--text); font-family:inherit; font-size:14px;}
+
+.big-readout{ font-family:var(--serif); font-size:64px; font-weight:500; margin:14px 0 26px 0; letter-spacing:0.01em; }
+
+.lap-list{ width:100%; max-width:360px; margin-top:22px; }
+.lap-row{ display:flex; justify-content:space-between; padding:9px 4px; border-bottom:1px solid var(--border); font-size:13.5px; }
+.lap-row span:first-child{ color:var(--text-muted); }
+
+.alarm-form{ display:flex; gap:10px; flex-wrap:wrap; align-items:center; margin-bottom:20px; }
+.alarm-form input[type="time"], .alarm-form input[type="text"]{
+  padding:10px 12px; border-radius:10px; border:1px solid var(--border); background:var(--surface); color:var(--text); font-family:inherit; font-size:13.5px;
+}
+.alarm-form input[type="text"]{ width:170px; }
+.alarm-list{ display:flex; flex-direction:column; gap:10px; max-width:480px; }
+.alarm-item{
+  display:flex; align-items:center; justify-content:space-between; padding:14px 16px; border:1px solid var(--border); border-radius:var(--radius-md); background:var(--surface);
+}
+.alarm-item.off{ opacity:0.5; }
+.alarm-time{ font-family:var(--serif); font-size:22px; }
+.alarm-name{ font-size:12.5px; color:var(--text-muted); }
+.alarm-actions{ display:flex; align-items:center; gap:10px; }
+.icon-only-btn{ background:none; border:none; color:var(--text-muted); cursor:pointer; padding:4px; }
+.icon-only-btn:hover{ color:var(--danger); }
+.icon-only-btn svg{ width:16px; height:16px; stroke:currentColor; fill:none; stroke-width:1.6; }
+
+/* ============ TASKS PAGE ============ */
+.task-add-row{ display:flex; gap:10px; margin-bottom:8px; }
+.task-add-row input[type="text"]{
+  flex:1; padding:12px 14px; border-radius:12px; border:1px solid var(--border); background:var(--surface); color:var(--text); font-family:inherit; font-size:14px;
+}
+select.priority-select{ padding:12px; border-radius:12px; }
+.task-progress-line{ font-size:13px; color:var(--text-muted); margin:14px 0 18px 0; }
+.task-list{ display:flex; flex-direction:column; gap:9px; max-width:640px; }
+.task-item{
+  display:flex; align-items:center; gap:12px; padding:13px 15px; border:1px solid var(--border); border-radius:var(--radius-md); background:var(--surface);
+}
+.task-item input[type="checkbox"]{ width:17px; height:17px; accent-color:var(--pine); flex-shrink:0; }
+.task-title{ flex:1; font-size:14px; }
+.task-item.completed .task-title{ text-decoration:line-through; color:var(--text-muted); }
+.priority-dot{ width:7px; height:7px; border-radius:50%; flex-shrink:0; }
+.priority-dot.high{ background:#B3654A; }
+.priority-dot.medium{ background:#C79A3E; }
+.priority-dot.low{ background:var(--text-muted); }
+.task-item .icon-only-btn{ padding:5px; }
+.empty-state{ text-align:center; padding:50px 20px; color:var(--text-muted); }
+.empty-state svg{ width:34px; height:34px; stroke:currentColor; fill:none; stroke-width:1.3; margin-bottom:12px; opacity:0.6; }
+.task-title-input{
+  flex:1; border:1px solid var(--pine); border-radius:8px; padding:6px 9px; font-family:inherit; font-size:14px; background:var(--bg); color:var(--text);
+}
+
+/* ============ SOUNDS PAGE ============ */
+.sound-grid{ display:grid; grid-template-columns:repeat(auto-fill, minmax(220px,1fr)); gap:14px; max-width:900px; }
+.sound-card{ padding:18px; display:flex; flex-direction:column; gap:12px; }
+.sound-top{ display:flex; align-items:center; justify-content:space-between; }
+.sound-name{ display:flex; align-items:center; gap:10px; font-size:14.5px; }
+.sound-emoji{ font-size:20px; }
+.play-toggle{
+  width:36px; height:36px; border-radius:50%; border:1px solid var(--border); background:var(--bg); color:var(--text);
+  display:flex; align-items:center; justify-content:center; cursor:pointer;
+}
+.play-toggle.playing{ background:var(--pine); color:#fff; border-color:var(--pine); }
+.play-toggle svg{ width:13px; height:13px; stroke:currentColor; fill:currentColor; }
+.vol-row{ display:flex; align-items:center; gap:8px; }
+.vol-row input[type="range"]{ flex:1; accent-color:var(--pine); }
+
+.spotify-card{ max-width:420px; margin-top:22px; padding:20px; display:flex; align-items:center; gap:16px; }
+.spotify-icon{ width:44px;height:44px; border-radius:12px; background:#1DB954; display:flex;align-items:center;justify-content:center; flex-shrink:0;}
+.spotify-icon svg{ width:22px;height:22px; fill:#fff; }
+.spotify-text h4{ margin:0 0 3px 0; font-size:14.5px; }
+.spotify-text p{ margin:0; font-size:12.5px; color:var(--text-muted); }
+.spotify-btn{ margin-top:10px; }
+
+/* ============ STATS PAGE ============ */
+.stats-grid{ display:grid; grid-template-columns:repeat(auto-fit, minmax(160px,1fr)); gap:14px; max-width:900px; margin-bottom:24px; }
+.stat-tile{ padding:20px; }
+.stat-tile .stat-value{ font-size:30px; display:block; margin-bottom:4px; }
+.stat-tile .stat-label{ font-size:12.5px; }
+.week-bars{ display:flex; align-items:flex-end; gap:10px; height:130px; max-width:500px; padding-top:10px; }
+.week-bar-col{ flex:1; display:flex; flex-direction:column; align-items:center; gap:8px; height:100%; justify-content:flex-end;}
+.week-bar{ width:100%; max-width:30px; background:var(--pine-soft); border-radius:6px 6px 3px 3px; position:relative; min-height:3px; }
+.week-bar.today{ background:var(--pine); }
+.week-bar-label{ font-size:11px; color:var(--text-muted); }
+
+/* ============ CONFIRM DIALOG ============ */
+.confirm-box{ max-width:340px; }
+.confirm-box p{ font-size:13.5px; color:var(--text-muted); margin:0 0 20px 0; }
+
+/* ============ BOTTOM NAV (mobile) ============ */
+.bottom-nav{ display:none; }
+
+/* ============ TOAST ============ */
+.toast{
+  position:fixed; bottom:24px; left:50%; transform:translateX(-50%) translateY(20px);
+  background:var(--surface); border:1px solid var(--border); color:var(--text);
+  padding:12px 20px; border-radius:12px; font-size:13.5px; box-shadow:0 4px 18px rgba(0,0,0,0.12);
+  opacity:0; transition: opacity 220ms ease, transform 220ms ease; z-index:100; pointer-events:none;
+}
+.toast.show{ opacity:1; transform:translateX(-50%) translateY(0); }
+
+/* ============ RESPONSIVE ============ */
+@media (max-width: 880px){
+  .focus-grid{ grid-template-columns:1fr; }
+}
+@media (max-width: 720px){
+  .app{ grid-template-columns:1fr; }
+  .nav-rail{ display:none; }
+  .bottom-nav{
+    display:flex; position:fixed; bottom:0; left:0; right:0; background:var(--surface); border-top:1px solid var(--border);
+    justify-content:space-around; padding:8px 6px calc(8px + env(safe-area-inset-bottom)) 6px; z-index:40;
+  }
+  .bottom-nav .nav-btn{ width:auto; flex:1; }
+  .view{ padding:16px 16px 90px 16px; }
+  .topbar{ padding:16px 16px 0 16px; }
+  .timer-ring-wrap{ width:230px; height:230px; }
+  .timer-big{ font-size:44px; }
+  .big-readout{ font-size:48px; }
+}
+</style>
+</head>
+<body data-theme="light">
+
+<div class="app">
+  <!-- ===== NAV RAIL (desktop) ===== -->
+  <nav class="nav-rail" aria-label="Main navigation">
+    <div class="nav-mark" aria-hidden="true">f</div>
+    <button class="nav-btn" data-nav="focus" aria-label="Focus">
+      <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"></circle><circle cx="12" cy="12" r="3"></circle></svg>
+      Focus
+    </button>
+    <button class="nav-btn" data-nav="timer" aria-label="Timer">
+      <svg viewBox="0 0 24 24"><circle cx="12" cy="13" r="8"></circle><path d="M12 9v4l3 2"></path><path d="M9 2h6"></path></svg>
+      Timer
+    </button>
+    <button class="nav-btn" data-nav="tasks" aria-label="Tasks">
+      <svg viewBox="0 0 24 24"><path d="M9 11l2 2 4-4"></path><rect x="3" y="4" width="18" height="16" rx="3"></rect></svg>
+      Tasks
+    </button>
+    <button class="nav-btn" data-nav="sounds" aria-label="Sounds">
+      <svg viewBox="0 0 24 24"><path d="M4 10v4h4l5 4V6l-5 4H4z"></path><path d="M16 9a5 5 0 0 1 0 6"></path></svg>
+      Sounds
+    </button>
+    <button class="nav-btn" data-nav="stats" aria-label="Stats">
+      <svg viewBox="0 0 24 24"><path d="M4 20V10"></path><path d="M12 20V4"></path><path d="M20 20v-7"></path></svg>
+      Stats
+    </button>
+    <div class="nav-spacer"></div>
+  </nav>
+
+  <!-- ===== MAIN ===== -->
+  <div class="main">
+    <div class="topbar">
+      <h1 id="page-title">Focus</h1>
+      <div class="topbar-actions">
+        <button class="icon-btn" id="theme-toggle" aria-label="Toggle theme">
+          <svg id="theme-icon" viewBox="0 0 24 24"><path d="M21 12.5A9 9 0 1 1 11.5 3a7 7 0 0 0 9.5 9.5z"></path></svg>
+        </button>
+        <button class="icon-btn" id="settings-btn" aria-label="Settings">
+          <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.7 1.7 0 0 0 .34 1.87l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.7 1.7 0 0 0-1.87-.34 1.7 1.7 0 0 0-1 1.55V21a2 2 0 0 1-4 0v-.09a1.7 1.7 0 0 0-1-1.56 1.7 1.7 0 0 0-1.87.34l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.7 1.7 0 0 0 .34-1.87 1.7 1.7 0 0 0-1.55-1H3a2 2 0 0 1 0-4h.09a1.7 1.7 0 0 0 1.56-1 1.7 1.7 0 0 0-.34-1.87l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.7 1.7 0 0 0 1.87.34H9a1.7 1.7 0 0 0 1-1.55V3a2 2 0 0 1 4 0v.09a1.7 1.7 0 0 0 1 1.56 1.7 1.7 0 0 0 1.87-.34l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.7 1.7 0 0 0-.34 1.87V9a1.7 1.7 0 0 0 1.55 1H21a2 2 0 0 1 0 4h-.09a1.7 1.7 0 0 0-1.55 1z"></path></svg>
+        </button>
+      </div>
+    </div>
+
+    <!-- ================= FOCUS VIEW ================= -->
+    <section class="view" id="view-focus">
+      <div class="focus-grid">
+        <div class="card focus-main">
+          <div class="clock" id="clock-display">--:--:--</div>
+          <div class="date-line" id="date-display">—</div>
+
+          <div class="timer-ring-wrap">
+            <svg viewBox="0 0 280 280">
+              <circle class="ring-track" cx="140" cy="140" r="126"></circle>
+              <circle class="ring-progress" id="ring-progress" cx="140" cy="140" r="126" stroke-dasharray="791.7" stroke-dashoffset="791.7"></circle>
+            </svg>
+            <div class="timer-center">
+              <div class="timer-mode-label" id="timer-mode-label">Focusing</div>
+              <div class="timer-big" id="pomodoro-display">25:00</div>
+              <div class="timer-sub" id="pomodoro-sub">Session 1</div>
+            </div>
+          </div>
+
+          <div class="timer-controls">
+            <button class="btn btn-primary" id="pomo-start">Start</button>
+            <button class="btn btn-ghost hidden" id="pomo-pause">Pause</button>
+            <button class="btn btn-ghost hidden" id="pomo-resume">Resume</button>
+            <button class="btn btn-text" id="pomo-skip">Skip</button>
+            <button class="btn btn-text" id="pomo-reset">Reset</button>
+          </div>
+
+          <div class="quick-row">
+            <button class="quick-chip" data-nav="focus"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"></circle></svg>Pomodoro</button>
+            <button class="quick-chip" data-nav="timer" data-tab="countdown"><svg viewBox="0 0 24 24"><circle cx="12" cy="13" r="8"></circle><path d="M12 9v4l3 2"></path></svg>Timer</button>
+            <button class="quick-chip" data-nav="timer" data-tab="stopwatch"><svg viewBox="0 0 24 24"><circle cx="12" cy="13" r="8"></circle><path d="M12 9v4"></path></svg>Stopwatch</button>
+            <button class="quick-chip" data-nav="timer" data-tab="alarm"><svg viewBox="0 0 24 24"><circle cx="12" cy="13" r="8"></circle><path d="M12 10v3l2 1"></path><path d="M5 3 3 5"></path><path d="M19 3l2 2"></path></svg>Alarm</button>
+          </div>
+        </div>
+
+        <div class="focus-side">
+          <div class="card">
+            <h3>Today's focus</h3>
+            <div class="stat-row"><span class="stat-label">Focus time</span><span class="stat-value" id="side-focus-time">0m</span></div>
+            <div class="stat-row"><span class="stat-label">Sessions</span><span class="stat-value" id="side-sessions">0</span></div>
+            <div class="stat-row"><span class="stat-label">Streak</span><span class="stat-value" id="side-streak">0 days</span></div>
+          </div>
+
+          <div class="card">
+            <h3>Today's tasks</h3>
+            <div id="side-task-list"></div>
+            <div class="progress-bar"><div id="side-task-progress-bar" style="width:0%"></div></div>
+            <div class="task-progress-line" id="side-task-progress-text" style="margin:8px 0 0 0;">0 / 0 completed</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= TIMER VIEW ================= -->
+    <section class="view hidden" id="view-timer">
+      <div class="tabs">
+        <button class="tab-btn active" data-timertab="countdown">Countdown</button>
+        <button class="tab-btn" data-timertab="stopwatch">Stopwatch</button>
+        <button class="tab-btn" data-timertab="alarm">Alarm</button>
+      </div>
+
+      <!-- Countdown -->
+      <div id="tab-countdown" class="centered-col">
+        <div class="duration-input-row" id="countdown-presets">
+          <button class="btn btn-ghost btn-sm" data-secs="300">5 min</button>
+          <button class="btn btn-ghost btn-sm" data-secs="900">15 min</button>
+          <button class="btn btn-ghost btn-sm" data-secs="1800">30 min</button>
+          <button class="btn btn-ghost btn-sm" data-secs="3600">1 hour</button>
+          <div class="custom-duration">
+            <input type="number" id="countdown-custom" min="1" max="600" placeholder="min">
+            <button class="btn btn-ghost btn-sm" id="countdown-custom-set">Set</button>
+          </div>
+        </div>
+        <div class="big-readout" id="countdown-display">05:00</div>
+        <div class="timer-controls">
+          <button class="btn btn-primary" id="countdown-start">Start</button>
+          <button class="btn btn-ghost hidden" id="countdown-pause">Pause</button>
+          <button class="btn btn-ghost hidden" id="countdown-resume">Resume</button>
+          <button class="btn btn-text" id="countdown-reset">Reset</button>
+        </div>
+        <div class="timer-sub" id="countdown-msg" style="margin-top:16px;"></div>
+      </div>
+
+      <!-- Stopwatch -->
+      <div id="tab-stopwatch" class="centered-col hidden">
+        <div class="big-readout" id="stopwatch-display">00:00.0</div>
+        <div class="timer-controls">
+          <button class="btn btn-primary" id="stopwatch-start">Start</button>
+          <button class="btn btn-ghost hidden" id="stopwatch-pause">Pause</button>
+          <button class="btn btn-ghost hidden" id="stopwatch-resume">Resume</button>
+          <button class="btn btn-text" id="stopwatch-lap" disabled>Lap</button>
+          <button class="btn btn-text" id="stopwatch-reset">Reset</button>
+        </div>
+        <div class="lap-list" id="lap-list"></div>
+      </div>
+
+      <!-- Alarm -->
+      <div id="tab-alarm" class="hidden">
+        <div class="alarm-form">
+          <input type="time" id="alarm-time-input">
+          <input type="text" id="alarm-name-input" placeholder="Label (e.g. Study)">
+          <button class="btn btn-primary btn-sm" id="alarm-add-btn">Add alarm</button>
+        </div>
+        <div class="alarm-list" id="alarm-list"></div>
+      </div>
+    </section>
+
+    <!-- ================= TASKS VIEW ================= -->
+    <section class="view hidden" id="view-tasks">
+      <div class="task-add-row">
+        <input type="text" id="task-input" placeholder="Add a task — e.g. Physics: finish problem set">
+        <select class="priority-select" id="task-priority">
+          <option value="low">Low</option>
+          <option value="medium" selected>Medium</option>
+          <option value="high">High</option>
+        </select>
+        <button class="btn btn-primary" id="task-add-btn">Add</button>
+      </div>
+      <div class="task-progress-line" id="task-progress-line">0 / 0 completed today</div>
+      <div class="task-list" id="task-list"></div>
+    </section>
+
+    <!-- ================= SOUNDS VIEW ================= -->
+    <section class="view hidden" id="view-sounds">
+      <div class="sound-grid" id="sound-grid"></div>
+      <div class="card spotify-card">
+        <div class="spotify-icon"><svg viewBox="0 0 24 24"><path d="M12 0a12 12 0 1 0 0 24 12 12 0 0 0 0-24zm5.3 17.3a.75.75 0 0 1-1.03.25c-2.82-1.72-6.37-2.11-10.55-1.16a.75.75 0 1 1-.33-1.46c4.58-1.04 8.5-.6 11.66 1.34.36.22.47.68.25 1.03zm1.47-3.27a.94.94 0 0 1-1.29.31c-3.23-1.98-8.15-2.56-11.97-1.4a.94.94 0 1 1-.55-1.8c4.36-1.32 9.78-.68 13.5 1.6.44.27.58.85.31 1.29zm.13-3.4C15.6 8.44 8.48 8.2 5.15 9.23a1.13 1.13 0 1 1-.66-2.16c3.83-1.16 11.7-.88 15.62 1.44a1.13 1.13 0 0 1-1.21 1.9v.02z"/></svg></div>
+        <div class="spotify-text">
+          <h4>Spotify</h4>
+          <p>Music integration coming soon.</p>
+          <button class="btn btn-ghost btn-sm spotify-btn" id="open-spotify-btn">Open Spotify</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= STATS VIEW ================= -->
+    <section class="view hidden" id="view-stats">
+      <div class="stats-grid">
+        <div class="card stat-tile"><span class="stat-value" id="stat-today-time">0m</span><span class="stat-label">Focus time today</span></div>
+        <div class="card stat-tile"><span class="stat-value" id="stat-today-sessions">0</span><span class="stat-label">Sessions today</span></div>
+        <div class="card stat-tile"><span class="stat-value" id="stat-today-tasks">0 / 0</span><span class="stat-label">Tasks completed</span></div>
+        <div class="card stat-tile"><span class="stat-value" id="stat-streak">0</span><span class="stat-label">Day streak</span></div>
+      </div>
+      <div class="card" style="max-width:560px;">
+        <h3>Last 7 days — focus minutes</h3>
+        <div class="week-bars" id="week-bars"></div>
+      </div>
+    </section>
+  </div>
+</div>
+
+<!-- ===== BOTTOM NAV (mobile) ===== -->
+<nav class="bottom-nav" aria-label="Main navigation mobile">
+  <button class="nav-btn" data-nav="focus"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"></circle></svg>Focus</button>
+  <button class="nav-btn" data-nav="timer"><svg viewBox="0 0 24 24"><circle cx="12" cy="13" r="8"></circle><path d="M12 9v4l3 2"></path></svg>Timer</button>
+  <button class="nav-btn" data-nav="tasks"><svg viewBox="0 0 24 24"><path d="M9 11l2 2 4-4"></path><rect x="3" y="4" width="18" height="16" rx="3"></rect></svg>Tasks</button>
+  <button class="nav-btn" data-nav="sounds"><svg viewBox="0 0 24 24"><path d="M4 10v4h4l5 4V6l-5 4H4z"></path></svg>Sounds</button>
+  <button class="nav-btn" data-nav="stats"><svg viewBox="0 0 24 24"><path d="M4 20V10"></path><path d="M12 20V4"></path><path d="M20 20v-7"></path></svg>Stats</button>
+</nav>
+
+<!-- ===== SETTINGS PANEL ===== -->
+<div class="panel-overlay hidden" id="settings-overlay">
+  <div class="panel" role="dialog" aria-label="Settings">
+    <h2>Settings</h2>
+    <div class="setting-row">
+      <label for="setting-theme">Appearance<span class="hint">Light or dark mode</span></label>
+      <select id="setting-theme"><option value="light">Light</option><option value="dark">Dark</option></select>
+    </div>
+    <div class="setting-row">
+      <label for="setting-sound-toggle">Timer notification sound</label>
+      <div class="switch"><input type="checkbox" id="setting-sound-toggle" checked><span class="slider-toggle"></span></div>
+    </div>
+    <div class="setting-row">
+      <label for="setting-ambient-vol">Ambient volume<span class="hint">Default volume for sounds</span></label>
+      <input type="range" id="setting-ambient-vol" min="0" max="100" value="50" style="width:110px; accent-color:var(--pine);">
+    </div>
+    <div class="setting-row">
+      <label for="setting-focus-dur">Default focus (min)</label>
+      <input type="number" id="setting-focus-dur" min="1" max="180" value="25">
+    </div>
+    <div class="setting-row">
+      <label for="setting-break-dur">Default break (min)</label>
+      <input type="number" id="setting-break-dur" min="1" max="60" value="5">
+    </div>
+    <div class="setting-row">
+      <label for="setting-autotransition">Auto-start next session</label>
+      <div class="switch"><input type="checkbox" id="setting-autotransition"><span class="slider-toggle"></span></div>
+    </div>
+    <div class="setting-row">
+      <label for="setting-clockformat">24-hour clock</label>
+      <div class="switch"><input type="checkbox" id="setting-clockformat"><span class="slider-toggle"></span></div>
+    </div>
+    <div class="setting-row">
+      <label>Reset all data<span class="hint">Clears tasks, stats, alarms, settings</span></label>
+      <button class="btn btn-ghost btn-sm" id="reset-data-btn">Reset</button>
+    </div>
+    <div class="panel-close-row">
+      <button class="btn btn-text" id="settings-close-btn">Close</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== CONFIRM DIALOG ===== -->
+<div class="panel-overlay hidden" id="confirm-overlay">
+  <div class="panel confirm-box" role="alertdialog">
+    <h2 id="confirm-title">Are you sure?</h2>
+    <p id="confirm-body">This can't be undone.</p>
+    <div class="panel-close-row">
+      <button class="btn btn-text" id="confirm-cancel">Cancel</button>
+      <button class="btn btn-primary" id="confirm-ok" style="background:var(--danger);">Confirm</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+(function(){
+"use strict";
+
+/* ============================================================
+   STORAGE
+============================================================ */
+const STORE_KEY = "focusapp_state_v1";
+const defaultState = () => ({
+  settings: {
+    theme: "light",
+    soundOn: true,
+    ambientVolume: 50,
+    focusMinutes: 25,
+    breakMinutes: 5,
+    autoTransition: false,
+    clock24h: false
+  },
+  tasks: [], // {id, title, priority, completed, createdAt, completedAt}
+  alarms: [], // {id, time, name, on}
+  stats: {
+    daily: {} // "YYYY-MM-DD": {focusSeconds, sessions, tasksCompleted}
+  },
+  streak: { count: 0, lastActiveDate: null }
+});
+
+function loadState(){
+  try{
+    const raw = localStorage.getItem(STORE_KEY);
+    if(!raw) return defaultState();
+    const parsed = JSON.parse(raw);
+    // merge with defaults to survive schema growth
+    const d = defaultState();
+    return {
+      settings: Object.assign(d.settings, parsed.settings || {}),
+      tasks: parsed.tasks || [],
+      alarms: parsed.alarms || [],
+      stats: parsed.stats || d.stats,
+      streak: parsed.streak || d.streak
+    };
+  }catch(e){
+    console.error("Failed to load state", e);
+    return defaultState();
+  }
+}
+function saveState(){
+  try{ localStorage.setItem(STORE_KEY, JSON.stringify(state)); }
+  catch(e){ console.error("Failed to save state", e); }
+}
+let state = loadState();
+
+function todayKey(d){
+  d = d || new Date();
+  return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");
+}
+function ensureDay(key){
+  if(!state.stats.daily[key]) state.stats.daily[key] = { focusSeconds:0, sessions:0, tasksCompleted:0 };
+  return state.stats.daily[key];
+}
+function bumpStreak(){
+  const today = todayKey();
+  if(state.streak.lastActiveDate === today) return;
+  const y = new Date(); y.setDate(y.getDate()-1);
+  if(state.streak.lastActiveDate === todayKey(y)){
+    state.streak.count += 1;
+  } else {
+    state.streak.count = 1;
+  }
+  state.streak.lastActiveDate = today;
+  saveState();
+}
+
+/* ============================================================
+   UTIL
+============================================================ */
+function pad(n){ return String(n).padStart(2,"0"); }
+function fmtMMSS(totalSeconds){
+  totalSeconds = Math.max(0, Math.round(totalSeconds));
+  const m = Math.floor(totalSeconds/60), s = totalSeconds%60;
+  return pad(m)+":"+pad(s);
+}
+function fmtMinutesLabel(totalSeconds){
+  const m = Math.round(totalSeconds/60);
+  if(m < 60) return m+"m";
+  return Math.floor(m/60)+"h "+(m%60)+"m";
+}
+let toastTimer = null;
+function showToast(msg){
+  const t = document.getElementById("toast");
+  t.textContent = msg;
+  t.classList.add("show");
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(()=>t.classList.remove("show"), 2600);
+}
+function confirmDialog(title, body){
+  return new Promise((resolve)=>{
+    const overlay = document.getElementById("confirm-overlay");
+    document.getElementById("confirm-title").textContent = title;
+    document.getElementById("confirm-body").textContent = body;
+    overlay.classList.remove("hidden");
+    function cleanup(result){
+      overlay.classList.add("hidden");
+      okBtn.removeEventListener("click", onOk);
+      cancelBtn.removeEventListener("click", onCancel);
+      resolve(result);
+    }
+    const okBtn = document.getElementById("confirm-ok");
+    const cancelBtn = document.getElementById("confirm-cancel");
+    function onOk(){ cleanup(true); }
+    function onCancel(){ cleanup(false); }
+    okBtn.addEventListener("click", onOk);
+    cancelBtn.addEventListener("click", onCancel);
+  });
+}
+function requestNotifyPermission(){
+  if("Notification" in window && Notification.permission === "default"){
+    Notification.requestPermission();
+  }
+}
+function notify(title, body){
+  if(!state.settings.soundOn) { /* sound setting also gates visual ping to keep it simple */ }
+  if("Notification" in window && Notification.permission === "granted" && document.hidden){
+    try{ new Notification(title, {body}); }catch(e){}
+  }
+  showToast(title + (body ? " — "+body : ""));
+}
+
+/* Gentle notification sound via WebAudio (no external files needed) */
+let audioCtx = null;
+function getCtx(){
+  if(!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  return audioCtx;
+}
+function playChime(){
+  if(!state.settings.soundOn) return;
+  try{
+    const ctx = getCtx();
+    const now = ctx.currentTime;
+    [0, 0.18].forEach((offset, i)=>{
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = "sine";
+      osc.frequency.value = i === 0 ? 660 : 880;
+      gain.gain.setValueAtTime(0, now+offset);
+      gain.gain.linearRampToValueAtTime(0.16, now+offset+0.03);
+      gain.gain.exponentialRampToValueAtTime(0.0001, now+offset+0.9);
+      osc.connect(gain).connect(ctx.destination);
+      osc.start(now+offset);
+      osc.stop(now+offset+0.9);
+    });
+  }catch(e){ console.error(e); }
+}
+
+/* ============================================================
+   NAVIGATION
+============================================================ */
+const views = ["focus","timer","tasks","sounds","stats"];
+const titleMap = {focus:"Focus", timer:"Timer", tasks:"Tasks", sounds:"Sounds", stats:"Stats"};
+function goTo(view, opts){
+  opts = opts || {};
+  views.forEach(v=>{
+    document.getElementById("view-"+v).classList.toggle("hidden", v!==view);
+  });
+  document.querySelectorAll("[data-nav]").forEach(btn=>{
+    btn.classList.toggle("active", btn.getAttribute("data-nav")===view);
+  });
+  document.getElementById("page-title").textContent = titleMap[view];
+  if(view === "timer" && opts.tab){ selectTimerTab(opts.tab); }
+  location.hash = view;
+}
+document.querySelectorAll("[data-nav]").forEach(btn=>{
+  btn.addEventListener("click", ()=>{
+    goTo(btn.getAttribute("data-nav"), {tab: btn.getAttribute("data-tab")});
+  });
+});
+window.addEventListener("hashchange", ()=>{
+  const v = location.hash.replace("#","");
+  if(views.includes(v)) goTo(v);
+});
+(function initRoute(){
+  const v = location.hash.replace("#","");
+  goTo(views.includes(v) ? v : "focus");
+})();
+
+/* ============================================================
+   THEME
+============================================================ */
+function applyTheme(theme){
+  document.body.setAttribute("data-theme", theme);
+  document.getElementById("setting-theme").value = theme;
+  const icon = document.getElementById("theme-icon");
+  icon.innerHTML = theme === "dark"
+    ? '<circle cx="12" cy="12" r="4"></circle><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"></path>'
+    : '<path d="M21 12.5A9 9 0 1 1 11.5 3a7 7 0 0 0 9.5 9.5z"></path>';
+  state.settings.theme = theme;
+  saveState();
+}
+document.getElementById("theme-toggle").addEventListener("click", ()=>{
+  applyTheme(state.settings.theme === "dark" ? "light" : "dark");
+});
+document.getElementById("setting-theme").addEventListener("change", (e)=> applyTheme(e.target.value));
+
+/* ============================================================
+   SETTINGS PANEL
+============================================================ */
+const settingsOverlay = document.getElementById("settings-overlay");
+document.getElementById("settings-btn").addEventListener("click", ()=>{
+  document.getElementById("setting-sound-toggle").checked = state.settings.soundOn;
+  document.getElementById("setting-ambient-vol").value = state.settings.ambientVolume;
+  document.getElementById("setting-focus-dur").value = state.settings.focusMinutes;
+  document.getElementById("setting-break-dur").value = state.settings.breakMinutes;
+  document.getElementById("setting-autotransition").checked = state.settings.autoTransition;
+  document.getElementById("setting-clockformat").checked = state.settings.clock24h;
+  settingsOverlay.classList.remove("hidden");
+});
+document.getElementById("settings-close-btn").addEventListener("click", ()=> settingsOverlay.classList.add("hidden"));
+settingsOverlay.addEventListener("click", (e)=>{ if(e.target === settingsOverlay) settingsOverlay.classList.add("hidden"); });
+
+document.getElementById("setting-sound-toggle").addEventListener("change", (e)=>{ state.settings.soundOn = e.target.checked; saveState(); });
+document.getElementById("setting-ambient-vol").addEventListener("input", (e)=>{
+  state.settings.ambientVolume = Number(e.target.value); saveState();
+  updateAllAmbientVolumes();
+});
+document.getElementById("setting-focus-dur").addEventListener("change", (e)=>{
+  let v = Math.max(1, Math.min(180, Number(e.target.value)||25));
+  e.target.value = v;
+  state.settings.focusMinutes = v; saveState();
+  if(!pomo.running && pomo.mode==="focus" && !pomo.paused) resetPomodoro();
+});
+document.getElementById("setting-break-dur").addEventListener("change", (e)=>{
+  let v = Math.max(1, Math.min(60, Number(e.target.value)||5));
+  e.target.value = v;
+  state.settings.breakMinutes = v; saveState();
+});
+document.getElementById("setting-autotransition").addEventListener("change", (e)=>{ state.settings.autoTransition = e.target.checked; saveState(); });
+document.getElementById("setting-clockformat").addEventListener("change", (e)=>{ state.settings.clock24h = e.target.checked; saveState(); });
+
+document.getElementById("reset-data-btn").addEventListener("click", async ()=>{
+  const ok = await confirmDialog("Reset all data?", "This clears your tasks, stats, alarms and settings. This can't be undone.");
+  if(ok){
+    localStorage.removeItem(STORE_KEY);
+    location.reload();
+  }
+});
+
+/* ============================================================
+   CLOCK / DATE
+============================================================ */
+function tickClock(){
+  const now = new Date();
+  let h = now.getHours();
+  const m = pad(now.getMinutes()), s = pad(now.getSeconds());
+  let suffix = "";
+  if(!state.settings.clock24h){
+    suffix = h >= 12 ? " PM" : " AM";
+    h = h % 12; if(h===0) h = 12;
+  }
+  document.getElementById("clock-display").textContent = pad(h)+":"+m+":"+s+suffix;
+  document.getElementById("date-display").textContent = now.toLocaleDateString(undefined, {weekday:"long", month:"long", day:"numeric"});
+}
+setInterval(tickClock, 1000); tickClock();
+
+/* ============================================================
+   POMODORO
+============================================================ */
+const pomo = {
+  mode: "focus", // focus | break
+  session: 1,
+  running: false,
+  paused: false,
+  endTime: null, // timestamp when running
+  remaining: null, // seconds, used when paused/stopped
+  totalForRing: null,
+  timerId: null
+};
+const RING_CIRCUMFERENCE = 2*Math.PI*126;
+
+function pomoDurationSeconds(){
+  return (pomo.mode === "focus" ? state.settings.focusMinutes : state.settings.breakMinutes) * 60;
+}
+function resetPomodoro(){
+  clearInterval(pomo.timerId);
+  pomo.running = false; pomo.paused = false;
+  pomo.remaining = pomoDurationSeconds();
+  pomo.totalForRing = pomo.remaining;
+  renderPomodoro();
+  setPomoButtons("idle");
+}
+function setPomoButtons(mode){
+  const start=document.getElementById("pomo-start"), pause=document.getElementById("pomo-pause"), resume=document.getElementById("pomo-resume");
+  start.classList.toggle("hidden", mode!=="idle");
+  pause.classList.toggle("hidden", mode!=="running");
+  resume.classList.toggle("hidden", mode!=="paused");
+}
+function renderPomodoro(){
+  const remaining = pomo.remaining;
+  document.getElementById("pomodoro-display").textContent = fmtMMSS(remaining);
+  document.getElementById("pomodoro-sub").textContent = pomo.mode === "focus" ? "Session "+pomo.session : "Break";
+  const label = document.getElementById("timer-mode-label");
+  const ring = document.getElementById("ring-progress");
+  label.textContent = pomo.mode === "focus" ? "Focusing" : "On break";
+  label.classList.toggle("break", pomo.mode === "break");
+  ring.classList.toggle("break", pomo.mode === "break");
+  const total = pomo.totalForRing || pomoDurationSeconds();
+  const frac = total > 0 ? Math.max(0, remaining/total) : 0;
+  ring.style.strokeDasharray = RING_CIRCUMFERENCE;
+  ring.style.strokeDashoffset = RING_CIRCUMFERENCE * frac;
+  document.title = (pomo.running ? fmtMMSS(remaining)+" · " : "") + "Focus";
+}
+function startPomodoro(){
+  if(pomo.remaining == null) pomo.remaining = pomoDurationSeconds();
+  pomo.totalForRing = pomo.totalForRing || pomoDurationSeconds();
+  pomo.running = true; pomo.paused = false;
+  pomo.endTime = Date.now() + pomo.remaining*1000;
+  setPomoButtons("running");
+  requestNotifyPermission();
+  clearInterval(pomo.timerId);
+  pomo.timerId = setInterval(pomoTick, 250);
+}
+function pausePomodoro(){
+  pomo.running = false; pomo.paused = true;
+  pomo.remaining = Math.max(0, (pomo.endTime - Date.now())/1000);
+  clearInterval(pomo.timerId);
+  setPomoButtons("paused");
+  renderPomodoro();
+}
+function pomoTick(){
+  const remaining = (pomo.endTime - Date.now())/1000;
+  pomo.remaining = Math.max(0, remaining);
+  renderPomodoro();
+  if(remaining <= 0){
+    clearInterval(pomo.timerId);
+    completePomodoroSegment();
+  }
+}
+function completePomodoroSegment(){
+  if(pomo.mode === "focus"){
+    const key = todayKey();
+    const day = ensureDay(key);
+    day.focusSeconds += pomoDurationSeconds();
+    day.sessions += 1;
+    bumpStreak();
+    saveState();
+    notify("Focus session complete", "Time for a break.");
+    pomo.mode = "break";
+  } else {
+    notify("Break's over", "Ready for another session?");
+    pomo.mode = "focus";
+    pomo.session += 1;
+  }
+  playChime();
+  pomo.remaining = pomoDurationSeconds();
+  pomo.totalForRing = pomo.remaining;
+  refreshSideStats();
+  refreshStatsPage();
+  if(state.settings.autoTransition){
+    startPomodoro();
+  } else {
+    pomo.running = false; pomo.paused = false;
+    setPomoButtons("idle");
+    renderPomodoro();
+  }
+}
+function skipPomodoro(){
+  clearInterval(pomo.timerId);
+  pomo.remaining = 0;
+  completePomodoroSegment();
+}
+document.getElementById("pomo-start").addEventListener("click", startPomodoro);
+document.getElementById("pomo-pause").addEventListener("click", pausePomodoro);
+document.getElementById("pomo-resume").addEventListener("click", startPomodoro);
+document.getElementById("pomo-skip").addEventListener("click", skipPomodoro);
+document.getElementById("pomo-reset").addEventListener("click", async ()=>{
+  if(pomo.running || pomo.paused){
+    const ok = await confirmDialog("Reset this session?", "Your current progress on this timer will be lost.");
+    if(!ok) return;
+  }
+  resetPomodoro();
+});
+resetPomodoro();
+
+/* ============================================================
+   COUNTDOWN TIMER
+============================================================ */
+const countdown = { total: 300, remaining: 300, endTime:null, running:false, paused:false, timerId:null };
+function renderCountdown(){
+  document.getElementById("countdown-display").textContent = fmtMMSS(countdown.remaining);
+}
+function setCountdownButtons(mode){
+  document.getElementById("countdown-start").classList.toggle("hidden", mode!=="idle");
+  document.getElementById("countdown-pause").classList.toggle("hidden", mode!=="running");
+  document.getElementById("countdown-resume").classList.toggle("hidden", mode!=="paused");
+}
+document.querySelectorAll("#countdown-presets [data-secs]").forEach(btn=>{
+  btn.addEventListener("click", ()=>{
+    if(countdown.running) return;
+    countdown.total = Number(btn.getAttribute("data-secs"));
+    countdown.remaining = countdown.total;
+    document.getElementById("countdown-msg").textContent = "";
+    renderCountdown();
+  });
+});
+document.getElementById("countdown-custom-set").addEventListener("click", ()=>{
+  const val = Number(document.getElementById("countdown-custom").value);
+  if(!val || val <= 0 || val > 600){ showToast("Enter a value between 1 and 600 minutes"); return; }
+  countdown.total = Math.round(val*60);
+  countdown.remaining = countdown.total;
+  document.getElementById("countdown-msg").textContent = "";
+  renderCountdown();
+});
+document.getElementById("countdown-start").addEventListener("click", ()=>{
+  if(countdown.remaining <= 0){ showToast("Set a duration first"); return; }
+  countdown.running = true; countdown.paused = false;
+  countdown.endTime = Date.now() + countdown.remaining*1000;
+  document.getElementById("countdown-msg").textContent = "";
+  setCountdownButtons("running");
+  requestNotifyPermission();
+  clearInterval(countdown.timerId);
+  countdown.timerId = setInterval(()=>{
+    const rem = (countdown.endTime - Date.now())/1000;
+    countdown.remaining = Math.max(0, rem);
+    renderCountdown();
+    if(rem <= 0){
+      clearInterval(countdown.timerId);
+      countdown.running = false;
+      setCountdownButtons("idle");
+      playChime();
+      notify("Time's up", "Your countdown has finished.");
+      document.getElementById("countdown-msg").textContent = "✓ Countdown finished";
+    }
+  }, 200);
+});
+document.getElementById("countdown-pause").addEventListener("click", ()=>{
+  countdown.running = false; countdown.paused = true;
+  countdown.remaining = Math.max(0, (countdown.endTime - Date.now())/1000);
+  clearInterval(countdown.timerId);
+  setCountdownButtons("paused");
+});
+document.getElementById("countdown-resume").addEventListener("click", ()=>{
+  document.getElementById("countdown-start").click();
+});
+document.getElementById("countdown-reset").addEventListener("click", async ()=>{
+  if(countdown.running || countdown.paused){
+    const ok = await confirmDialog("Reset countdown?", "This will stop and clear the current countdown.");
+    if(!ok) return;
+  }
+  clearInterval(countdown.timerId);
+  countdown.running=false; countdown.paused=false;
+  countdown.remaining = countdown.total;
+  document.getElementById("countdown-msg").textContent = "";
+  setCountdownButtons("idle");
+  renderCountdown();
+});
+renderCountdown();
+
+/* ============================================================
+   STOPWATCH
+============================================================ */
+const stopwatch = { elapsedMs:0, startTs:null, running:false, laps:[], timerId:null };
+function fmtStopwatch(ms){
+  const totalCs = Math.floor(ms/100);
+  const m = Math.floor(totalCs/600), s = Math.floor(totalCs/10)%60, ds = totalCs%10;
+  return pad(m)+":"+pad(s)+"."+ds;
+}
+function renderStopwatch(){
+  document.getElementById("stopwatch-display").textContent = fmtStopwatch(stopwatch.elapsedMs);
+}
+function renderLaps(){
+  const list = document.getElementById("lap-list");
+  if(stopwatch.laps.length === 0){ list.innerHTML = ""; return; }
+  list.innerHTML = stopwatch.laps.map((lap,i)=>
+    `<div class="lap-row"><span>Lap ${i+1}</span><span>${fmtStopwatch(lap)}</span></div>`
+  ).reverse().join("");
+}
+function setStopwatchButtons(mode){
+  document.getElementById("stopwatch-start").classList.toggle("hidden", mode!=="idle");
+  document.getElementById("stopwatch-pause").classList.toggle("hidden", mode!=="running");
+  document.getElementById("stopwatch-resume").classList.toggle("hidden", mode!=="paused");
+  document.getElementById("stopwatch-lap").disabled = mode!=="running";
+}
+document.getElementById("stopwatch-start").addEventListener("click", ()=>{
+  stopwatch.running = true;
+  stopwatch.startTs = Date.now() - stopwatch.elapsedMs;
+  setStopwatchButtons("running");
+  clearInterval(stopwatch.timerId);
+  stopwatch.timerId = setInterval(()=>{
+    stopwatch.elapsedMs = Date.now() - stopwatch.startTs;
+    renderStopwatch();
+  }, 100);
+});
+document.getElementById("stopwatch-pause").addEventListener("click", ()=>{
+  stopwatch.running = false;
+  clearInterval(stopwatch.timerId);
+  setStopwatchButtons("paused");
+});
+document.getElementById("stopwatch-resume").addEventListener("click", ()=>{
+  document.getElementById("stopwatch-start").click();
+});
+document.getElementById("stopwatch-lap").addEventListener("click", ()=>{
+  stopwatch.laps.push(stopwatch.elapsedMs);
+  renderLaps();
+});
+document.getElementById("stopwatch-reset").addEventListener("click", async ()=>{
+  if(stopwatch.running || stopwatch.elapsedMs > 0){
+    const ok = await confirmDialog("Reset stopwatch?", "This clears the time and all laps.");
+    if(!ok) return;
+  }
+  clearInterval(stopwatch.timerId);
+  stopwatch.running=false; stopwatch.elapsedMs=0; stopwatch.laps=[];
+  setStopwatchButtons("idle");
+  renderStopwatch(); renderLaps();
+});
+renderStopwatch();
+
+/* ============================================================
+   TIMER TABS
+============================================================ */
+function selectTimerTab(tab){
+  tab = tab || "countdown";
+  document.querySelectorAll(".tab-btn").forEach(b=> b.classList.toggle("active", b.getAttribute("data-timertab")===tab));
+  ["countdown","stopwatch","alarm"].forEach(t=>{
+    document.getElementById("tab-"+t).classList.toggle("hidden", t!==tab);
+  });
+}
+document.querySelectorAll(".tab-btn").forEach(btn=>{
+  btn.addEventListener("click", ()=> selectTimerTab(btn.getAttribute("data-timertab")));
+});
+
+/* ============================================================
+   ALARMS
+============================================================ */
+function uid(){ return Date.now().toString(36)+Math.random().toString(36).slice(2,7); }
+function renderAlarms(){
+  const list = document.getElementById("alarm-list");
+  if(state.alarms.length === 0){
+    list.innerHTML = `<div class="empty-state" style="padding:24px 0;">Browser must stay open for alarms to ring.<br>No alarms yet — add one above.</div>`;
+    return;
+  }
+  const sorted = [...state.alarms].sort((a,b)=> a.time.localeCompare(b.time));
+  list.innerHTML = sorted.map(a=>{
+    const [hh,mm] = a.time.split(":");
+    let h = Number(hh); const suffix = h>=12 ? "PM":"AM"; let h12 = h%12; if(h12===0) h12=12;
+    const timeDisplay = state.settings.clock24h ? `${hh}:${mm}` : `${h12}:${mm} ${suffix}`;
+    return `<div class="alarm-item ${a.on?'':'off'}" data-id="${a.id}">
+      <div>
+        <div class="alarm-time">${timeDisplay}</div>
+        <div class="alarm-name">${a.name || "Alarm"}</div>
+      </div>
+      <div class="alarm-actions">
+        <div class="switch"><input type="checkbox" class="alarm-toggle" ${a.on?'checked':''}><span class="slider-toggle"></span></div>
+        <button class="icon-only-btn alarm-delete" aria-label="Delete alarm"><svg viewBox="0 0 24 24"><path d="M3 6h18"></path><path d="M8 6V4h8v2"></path><path d="M19 6l-1 14H6L5 6"></path></svg></button>
+      </div>
+    </div>`;
+  }).join("");
+  list.querySelectorAll(".alarm-toggle").forEach(cb=>{
+    cb.addEventListener("change", (e)=>{
+      const id = e.target.closest(".alarm-item").getAttribute("data-id");
+      const a = state.alarms.find(x=>x.id===id);
+      if(a){ a.on = e.target.checked; saveState(); }
+    });
+  });
+  list.querySelectorAll(".alarm-delete").forEach(btn=>{
+    btn.addEventListener("click", async ()=>{
+      const id = btn.closest(".alarm-item").getAttribute("data-id");
+      const ok = await confirmDialog("Delete this alarm?", "This can't be undone.");
+      if(!ok) return;
+      state.alarms = state.alarms.filter(x=>x.id!==id);
+      saveState(); renderAlarms();
+    });
+  });
+}
+document.getElementById("alarm-add-btn").addEventListener("click", ()=>{
+  const time = document.getElementById("alarm-time-input").value;
+  const name = document.getElementById("alarm-name-input").value.trim();
+  if(!time){ showToast("Pick a time first"); return; }
+  state.alarms.push({ id: uid(), time, name, on:true });
+  document.getElementById("alarm-name-input").value = "";
+  saveState(); renderAlarms();
+  requestNotifyPermission();
+  showToast("Alarm added");
+});
+let lastAlarmCheckMinute = null;
+function checkAlarms(){
+  const now = new Date();
+  const key = pad(now.getHours())+":"+pad(now.getMinutes());
+  if(key === lastAlarmCheckMinute) return;
+  lastAlarmCheckMinute = key;
+  state.alarms.forEach(a=>{
+    if(a.on && a.time === key){
+      playChime();
+      notify("Alarm — "+(a.name||"Reminder"), key);
+    }
+  });
+}
+setInterval(checkAlarms, 5000);
+renderAlarms();
+
+/* ============================================================
+   TASKS
+============================================================ */
+function renderTasks(){
+  const list = document.getElementById("task-list");
+  if(state.tasks.length === 0){
+    list.innerHTML = `<div class="empty-state">
+      <svg viewBox="0 0 24 24"><path d="M9 11l2 2 4-4"></path><rect x="3" y="4" width="18" height="16" rx="3"></rect></svg>
+      <div>No tasks yet. Add your first one above.</div>
+    </div>`;
+  } else {
+    const order = {high:0, medium:1, low:2};
+    const sorted = [...state.tasks].sort((a,b)=>{
+      if(a.completed !== b.completed) return a.completed ? 1 : -1;
+      return order[a.priority] - order[b.priority];
+    });
+    list.innerHTML = sorted.map(t=>`
+      <div class="task-item ${t.completed?'completed':''}" data-id="${t.id}">
+        <input type="checkbox" class="task-check" ${t.completed?'checked':''} aria-label="Mark task complete">
+        <span class="priority-dot ${t.priority}"></span>
+        <span class="task-title">${escapeHtml(t.title)}</span>
+        <button class="icon-only-btn task-edit" aria-label="Edit task"><svg viewBox="0 0 24 24"><path d="M12 20h9"></path><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z"></path></svg></button>
+        <button class="icon-only-btn task-delete" aria-label="Delete task"><svg viewBox="0 0 24 24"><path d="M3 6h18"></path><path d="M8 6V4h8v2"></path><path d="M19 6l-1 14H6L5 6"></path></svg></button>
+      </div>`).join("");
+  }
+  bindTaskEvents();
+  updateTaskProgress();
+  renderSideTasks();
+}
+function escapeHtml(s){
+  const d = document.createElement("div"); d.textContent = s; return d.innerHTML;
+}
+function bindTaskEvents(){
+  document.querySelectorAll(".task-check").forEach(cb=>{
+    cb.addEventListener("change", (e)=>{
+      const id = e.target.closest(".task-item").getAttribute("data-id");
+      toggleTask(id, e.target.checked);
+    });
+  });
+  document.querySelectorAll(".task-delete").forEach(btn=>{
+    btn.addEventListener("click", async ()=>{
+      const id = btn.closest(".task-item").getAttribute("data-id");
+      const ok = await confirmDialog("Delete this task?", "This can't be undone.");
+      if(!ok) return;
+      state.tasks = state.tasks.filter(t=>t.id!==id);
+      saveState(); renderTasks();
+    });
+  });
+  document.querySelectorAll(".task-edit").forEach(btn=>{
+    btn.addEventListener("click", ()=>{
+      const item = btn.closest(".task-item");
+      const id = item.getAttribute("data-id");
+      const task = state.tasks.find(t=>t.id===id);
+      const titleSpan = item.querySelector(".task-title");
+      const input = document.createElement("input");
+      input.type = "text"; input.value = task.title; input.className = "task-title-input";
+      titleSpan.replaceWith(input);
+      input.focus(); input.select();
+      function commit(){
+        const val = input.value.trim();
+        if(val) task.title = val;
+        saveState(); renderTasks();
+      }
+      input.addEventListener("blur", commit);
+      input.addEventListener("keydown", (e)=>{ if(e.key==="Enter") input.blur(); if(e.key==="Escape"){ renderTasks(); } });
+    });
+  });
+}
+function toggleTask(id, completed){
+  const t = state.tasks.find(x=>x.id===id);
+  if(!t) return;
+  t.completed = completed;
+  const key = todayKey();
+  const day = ensureDay(key);
+  if(completed){
+    t.completedAt = Date.now();
+    day.tasksCompleted += 1;
+  } else {
+    day.tasksCompleted = Math.max(0, day.tasksCompleted - (t.completedAt ? 1 : 0));
+    t.completedAt = null;
+  }
+  saveState();
+  renderTasks();
+  refreshStatsPage();
+}
+function updateTaskProgress(){
+  const total = state.tasks.length;
+  const done = state.tasks.filter(t=>t.completed).length;
+  document.getElementById("task-progress-line").textContent = `${done} / ${total} completed today`;
+}
+document.getElementById("task-add-btn").addEventListener("click", addTaskFromForm);
+document.getElementById("task-input").addEventListener("keydown", (e)=>{ if(e.key==="Enter") addTaskFromForm(); });
+function addTaskFromForm(){
+  const input = document.getElementById("task-input");
+  const title = input.value.trim();
+  if(!title) return;
+  const priority = document.getElementById("task-priority").value;
+  state.tasks.push({ id: uid(), title, priority, completed:false, createdAt: Date.now(), completedAt:null });
+  input.value = "";
+  saveState(); renderTasks();
+}
+function renderSideTasks(){
+  const wrap = document.getElementById("side-task-list");
+  const activeTasks = state.tasks.slice(-5);
+  if(activeTasks.length === 0){
+    wrap.innerHTML = `<div class="mini-empty">No tasks yet.</div>`;
+  } else {
+    wrap.innerHTML = activeTasks.map(t=>`
+      <label class="mini-task ${t.completed?'done':''}">
+        <input type="checkbox" class="mini-check" data-id="${t.id}" ${t.completed?'checked':''}>
+        <span>${escapeHtml(t.title)}</span>
+      </label>`).join("");
+    wrap.querySelectorAll(".mini-check").forEach(cb=>{
+      cb.addEventListener("change", (e)=> toggleTask(e.target.getAttribute("data-id"), e.target.checked));
+    });
+  }
+  const total = state.tasks.length, done = state.tasks.filter(t=>t.completed).length;
+  document.getElementById("side-task-progress-bar").style.width = total? (done/total*100)+"%" : "0%";
+  document.getElementById("side-task-progress-text").textContent = `${done} / ${total} completed`;
+}
+
+/* ============================================================
+   STATS
+============================================================ */
+function refreshSideStats(){
+  const key = todayKey();
+  const day = state.stats.daily[key] || {focusSeconds:0, sessions:0};
+  document.getElementById("side-focus-time").textContent = fmtMinutesLabel(day.focusSeconds);
+  document.getElementById("side-sessions").textContent = day.sessions;
+  document.getElementById("side-streak").textContent = state.streak.count + (state.streak.count===1 ? " day" : " days");
+}
+function refreshStatsPage(){
+  const key = todayKey();
+  const day = state.stats.daily[key] || {focusSeconds:0, sessions:0, tasksCompleted:0};
+  document.getElementById("stat-today-time").textContent = fmtMinutesLabel(day.focusSeconds);
+  document.getElementById("stat-today-sessions").textContent = day.sessions;
+  const totalTasks = state.tasks.length, doneTasks = state.tasks.filter(t=>t.completed).length;
+  document.getElementById("stat-today-tasks").textContent = `${doneTasks} / ${totalTasks}`;
+  document.getElementById("stat-streak").textContent = state.streak.count;
+
+  const bars = document.getElementById("week-bars");
+  const days = [];
+  for(let i=6;i>=0;i--){
+    const d = new Date(); d.setDate(d.getDate()-i);
+    days.push({ key: todayKey(d), label: d.toLocaleDateString(undefined,{weekday:"narrow"}), isToday: i===0 });
+  }
+  const maxSeconds = Math.max(60, ...days.map(d=> (state.stats.daily[d.key]?.focusSeconds)||0));
+  bars.innerHTML = days.map(d=>{
+    const secs = (state.stats.daily[d.key]?.focusSeconds)||0;
+    const pct = Math.max(2, Math.round(secs/maxSeconds*100));
+    return `<div class="week-bar-col">
+      <div class="week-bar ${d.isToday?'today':''}" style="height:${pct}%" title="${fmtMinutesLabel(secs)}"></div>
+      <div class="week-bar-label">${d.label}</div>
+    </div>`;
+  }).join("");
+}
+
+/* ============================================================
+   AMBIENT SOUNDS — procedurally generated, no external files
+============================================================ */
+const SOUND_DEFS = [
+  { id:"rain", label:"Rain", emoji:"🌧️" },
+  { id:"ocean", label:"Ocean", emoji:"🌊" },
+  { id:"forest", label:"Forest", emoji:"🌲" },
+  { id:"fireplace", label:"Fireplace", emoji:"🔥" },
+  { id:"cafe", label:"Café", emoji:"☕" }
+];
+const ambientNodes = {}; // id -> {source, gain, filter, playing}
+
+function buildNoiseBuffer(ctx){
+  const bufferSize = 2 * ctx.sampleRate;
+  const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+  const data = buffer.getChannelData(0);
+  for(let i=0;i<bufferSize;i++) data[i] = Math.random()*2-1;
+  return buffer;
+}
+function startAmbient(id){
+  const ctx = getCtx();
+  if(ctx.state === "suspended") ctx.resume();
+  const source = ctx.createBufferSource();
+  source.buffer = buildNoiseBuffer(ctx);
+  source.loop = true;
+
+  const gain = ctx.createGain();
+  gain.gain.value = (state.settings.ambientVolume/100) * 0.5;
+
+  let node = source;
+  if(id === "rain"){
+    const f = ctx.createBiquadFilter(); f.type="highpass"; f.frequency.value=1200;
+    const f2 = ctx.createBiquadFilter(); f2.type="lowpass"; f2.frequency.value=6000;
+    node.connect(f); f.connect(f2); node = f2;
+  } else if(id === "ocean"){
+    const f = ctx.createBiquadFilter(); f.type="lowpass"; f.frequency.value=500;
+    const lfo = ctx.createOscillator(); lfo.frequency.value = 0.15;
+    const lfoGain = ctx.createGain(); lfoGain.gain.value = 250;
+    lfo.connect(lfoGain); lfoGain.connect(f.frequency); lfo.start();
+    node.connect(f); node = f;
+    ambientNodes[id+"_lfo"] = lfo;
+  } else if(id === "forest"){
+    const f = ctx.createBiquadFilter(); f.type="bandpass"; f.frequency.value=2200; f.Q.value=0.6;
+    node.connect(f); node = f;
+  } else if(id === "fireplace"){
+    const f = ctx.createBiquadFilter(); f.type="lowpass"; f.frequency.value=900;
+    const f2 = ctx.createBiquadFilter(); f2.type="peaking"; f2.frequency.value=180; f2.gain.value=6;
+    node.connect(f); f.connect(f2); node = f2;
+  } else if(id === "cafe"){
+    const f = ctx.createBiquadFilter(); f.type="bandpass"; f.frequency.value=800; f.Q.value=0.4;
+    node.connect(f); node = f;
+  }
+  node.connect(gain); gain.connect(ctx.destination);
+  source.start();
+  ambientNodes[id] = { source, gain, playing:true };
+}
+function stopAmbient(id){
+  const n = ambientNodes[id];
+  if(n){
+    try{ n.source.stop(); }catch(e){}
+    delete ambientNodes[id];
+  }
+  const lfo = ambientNodes[id+"_lfo"];
+  if(lfo){ try{ lfo.stop(); }catch(e){} delete ambientNodes[id+"_lfo"]; }
+}
+function updateAllAmbientVolumes(){
+  Object.keys(ambientNodes).forEach(key=>{
+    if(key.endsWith("_lfo")) return;
+    ambientNodes[key].gain.gain.value = (state.settings.ambientVolume/100)*0.5;
+  });
+}
+function renderSounds(){
+  const grid = document.getElementById("sound-grid");
+  grid.innerHTML = SOUND_DEFS.map(s=>`
+    <div class="card sound-card" data-id="${s.id}">
+      <div class="sound-top">
+        <div class="sound-name"><span class="sound-emoji">${s.emoji}</span>${s.label}</div>
+        <button class="play-toggle" aria-label="Play ${s.label}">
+          <svg class="icon-play" viewBox="0 0 24 24"><path d="M6 4l14 8-14 8z"></path></svg>
+        </button>
+      </div>
+      <div class="vol-row">
+        <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" fill="none" stroke-width="1.6" style="color:var(--text-muted)"><path d="M4 10v4h4l5 4V6l-5 4H4z"></path></svg>
+        <input type="range" class="sound-vol" min="0" max="100" value="${state.settings.ambientVolume}">
+      </div>
+    </div>`).join("");
+  grid.querySelectorAll(".sound-card").forEach(card=>{
+    const id = card.getAttribute("data-id");
+    const toggle = card.querySelector(".play-toggle");
+    toggle.addEventListener("click", ()=>{
+      const isPlaying = !!ambientNodes[id];
+      if(isPlaying){ stopAmbient(id); toggle.classList.remove("playing"); toggle.querySelector("svg").innerHTML='<path d="M6 4l14 8-14 8z"></path>'; }
+      else { startAmbient(id); toggle.classList.add("playing"); toggle.querySelector("svg").innerHTML='<rect x="6" y="5" width="4" height="14"></rect><rect x="14" y="5" width="4" height="14"></rect>'; }
+    });
+    card.querySelector(".sound-vol").addEventListener("input", (e)=>{
+      const v = Number(e.target.value);
+      if(ambientNodes[id]) ambientNodes[id].gain.gain.value = (v/100)*0.5;
+    });
+  });
+}
+document.getElementById("open-spotify-btn").addEventListener("click", ()=>{
+  window.open("https://open.spotify.com", "_blank", "noopener");
+});
+
+/* ============================================================
+   KEYBOARD SHORTCUTS
+============================================================ */
+document.addEventListener("keydown", (e)=>{
+  const tag = (e.target.tagName || "").toLowerCase();
+  if(tag === "input" || tag === "textarea" || tag === "select") return;
+  if(e.code === "Space" && !document.getElementById("view-focus").classList.contains("hidden")){
+    e.preventDefault();
+    if(pomo.running) pausePomodoro(); else startPomodoro();
+  }
+});
+
+/* ============================================================
+   PREVENT ACCIDENTAL EXIT WHILE TIMER RUNS
+============================================================ */
+window.addEventListener("beforeunload", (e)=>{
+  if(pomo.running || countdown.running){
+    e.preventDefault();
+    e.returnValue = "";
+  }
+});
+
+/* ============================================================
+   INIT
+============================================================ */
+applyTheme(state.settings.theme);
+renderTasks();
+renderAlarms();
+renderSounds();
+refreshSideStats();
+refreshStatsPage();
+
+})();
+</script>
+</body>
+</html>
